@@ -1,108 +1,103 @@
 import streamlit as st
+import time
+import base64
+from PIL import Image
 
-def run_quiz():
-    st.title("파이썬 기초 퀴즈! 🐍")
-    st.write("아래 질문에 답하고 파이썬 지식을 테스트해보세요!")
+# ===== 초기 세팅 =====
+st.set_page_config(page_title="코딩 동아리: 랜섬웨어를 뚫어라", page_icon="🧩", layout="wide")
 
-    # 퀴즈 데이터 정의
-    # 각 딕셔너리는 질문, 보기, 정답 인덱스, 정답 설명을 포함합니다.
-    questions = [
-        {
-            "question": "파이썬에서 변수를 선언할 때 사용하는 키워드는 무엇인가요?",
-            "options": ["var", "let", "const", "파이썬은 변수 선언 시 별도의 키워드를 사용하지 않습니다."],
-            "answer_index": 3,
-            "explanation": "파이썬은 변수 선언 시 `var`, `let`, `const`와 같은 별도의 키워드를 사용하지 않고, 단순히 변수 이름과 할당 연산자(=)를 사용하여 값을 할당합니다."
-        },
-        {
-            "question": "다음 중 파이썬에서 주석을 나타내는 기호는 무엇인가요?",
-            "options": ["//", "/* */", "#", "--"],
-            "answer_index": 2,
-            "explanation": "파이썬에서는 `#` 기호를 사용하여 한 줄 주석을 나타냅니다. 여러 줄 주석은 보통 삼중 따옴표(```'''``` 또는 `\"\"\"\"\"\"`)를 사용합니다."
-        },
-        {
-            "question": "파이썬에서 리스트(list)의 특징이 아닌 것은 무엇인가요?",
-            "options": ["순서가 있다", "변경 가능하다 (mutable)", "중복된 값을 가질 수 없다", "다양한 데이터 타입의 요소를 포함할 수 있다"],
-            "answer_index": 2,
-            "explanation": "파이썬 리스트는 순서가 있고, 변경 가능하며, 중복된 값을 포함할 수 있고, 다양한 데이터 타입의 요소를 가질 수 있습니다. 중복된 값을 가질 수 없는 자료구조는 주로 세트(set)입니다."
-        }
-    ]
+# ===== 세션 상태 초기화 =====
+if 'start_time' not in st.session_state:
+st.session_state.start_time = time.time()
+if 'unlocked' not in st.session_state:
+st.session_state.unlocked = False
 
-    # 세션 상태 초기화 (사용자가 새로고침해도 점수 유지)
-    if 'score' not in st.session_state:
-        st.session_state.score = 0
-    if 'current_question' not in st.session_state:
-        st.session_state.current_question = 0
-    if 'show_feedback' not in st.session_state:
-        st.session_state.show_feedback = False
-    if 'selected_option' not in st.session_state:
-        st.session_state.selected_option = None
-    if 'quiz_finished' not in st.session_state:
-        st.session_state.quiz_finished = False
+# ===== 타이머 =====
+elapsed = time.time() - st.session_state.start_time
+remaining = max(0, 300 - int(elapsed)) # 5분 제한
 
-    # 퀴즈 진행 로직
-    if not st.session_state.quiz_finished:
-        current_q_data = questions[st.session_state.current_question]
-        st.subheader(f"문제 {st.session_state.current_question + 1}. {current_q_data['question']}")
+# ===== 우상단에 작게 시간 표시 =====
+st.markdown(f"<div style='position:fixed; top:10px; right:20px; color:gray; font-size:14px;'>⏳ {remaining}초 남음</div>", unsafe_allow_html=True)
 
-        # 라디오 버튼으로 보기 표시
-        selected_option_index = st.radio(
-            "답을 선택하세요:",
-            options=current_q_data["options"],
-            index=st.session_state.selected_option,
-            key=f"question_{st.session_state.current_question}"
-        )
+# ===== 헤더 =====
+st.title("🖥️ 코딩 동아리: 랜섬웨어를 뚫어라")
+st.markdown("""
+- **사건**: 동아리의 컴퓨터가 **랜섬웨어**에 걸렸다! 누군가 해킹해 시스템을 잠궜다.
+- **목표**: 퍼즐을 풀어 암호를 복구하고 시스템을 되찾아라.
+- 제한 시간은 **5분**!
+""")
 
-        if st.session_state.selected_option != selected_option_index:
-            st.session_state.selected_option = selected_option_index
-            st.session_state.show_feedback = False # 새로운 선택 시 피드백 숨김
+# ===== 게임 종료 처리 =====
+if remaining <= 0:
+st.error("⏰ 시간 초과! 시스템은 완전히 잠겼습니다...")
+st.stop()
 
-        # '정답 확인' 버튼
-        col1, col2 = st.columns([1, 1])
-        with col1:
-            if st.button("정답 확인", key=f"check_answer_{st.session_state.current_question}"):
-                if st.session_state.selected_option is not None:
-                    st.session_state.show_feedback = True
-                else:
-                    st.warning("답을 선택해주세요!")
+# ===== 방 위치 선택 =====
+location = st.selectbox("어디를 조사할까요?", ["노트북", "화이트보드", "책상 서랍", "책장", "쓰레기통"])
 
-        # 피드백 표시
-        if st.session_state.show_feedback:
-            if st.session_state.selected_option == current_q_data["answer_index"]:
-                st.success("🎉 정답입니다!")
-                if not st.session_state.get(f'answered_correctly_{st.session_state.current_question}', False):
-                    st.session_state.score += 1
-                    st.session_state[f'answered_correctly_{st.session_state.current_question}'] = True
-            else:
-                st.error(f"❌ 오답입니다. 정답은 '{current_q_data['options'][current_q_data['answer_index']]}' 입니다.")
-            st.info(f"**설명:** {current_q_data['explanation']}")
+# ===== 각 위치 별 오브젝트 반응 =====
+if location == "노트북":
+st.subheader("💻 노트북")
+st.write("노트북에는 최근의 git 커밋 로그가 보인다. 비밀번호에 필요한 숫자가 숨어있다!")
+st.code("""
+feat: 로그인 기능 추가
+fix: 오류 수정
+feat: 암호 3
+chore: README 업데이트
+feat: 암호 9
+refactor: UI 개선
+feat: 암호 4
+feat: 암호 2
+""")
 
-            # '다음 문제' 버튼
-            with col2:
-                if st.button("다음 문제", key=f"next_question_{st.session_state.current_question}"):
-                    if st.session_state.current_question < len(questions) - 1:
-                        st.session_state.current_question += 1
-                        st.session_state.show_feedback = False
-                        st.session_state.selected_option = None
-                    else:
-                        st.session_state.quiz_finished = True
-                        st.session_state.show_feedback = False
-    else:
-        # 퀴즈 종료 화면
-        st.success("✨ 퀴즈가 종료되었습니다! ✨")
-        st.balloons()
-        st.write(f"총 {len(questions)}문제 중 **{st.session_state.score}** 문제를 맞히셨습니다!")
+elif location == "화이트보드":
+st.subheader("🧾 화이트보드")
+st.write("화이트보드에 무언가 암호처럼 적혀 있다. base64 형식이다!")
+encoded = "U3RyZWFtbGl0IGlzIGZ1bg=="
+decoded = base64.b64decode(encoded).decode("utf-8")
+with st.expander("👀 디코딩 결과 보기"):
+st.code(decoded)
 
-        if st.button("다시 시작하기"):
-            st.session_state.score = 0
-            st.session_state.current_question = 0
-            st.session_state.show_feedback = False
-            st.session_state.selected_option = None
-            st.session_state.quiz_finished = False
-            # 정답 여부 기록 초기화 (모든 문제에 대해)
-            for i in range(len(questions)):
-                if f'answered_correctly_{i}' in st.session_state:
-                    del st.session_state[f'answered_correctly_{i}']
-            st.experimental_rerun()
+elif location == "책장":
+st.subheader("📚 책장")
+st.write("책장에 이상한 메모가 꽂혀 있다. 세로로 읽어야 의미가 있는 듯 하다.")
+st.code("""
+암 디 힌
+호 코 트
+는 드 는
+: : !
+""")
+st.info("세로로 읽으면...?")
 
-if __name__ == "__main__":
-    run_quiz()
+elif location == "책상 서랍":
+st.subheader("🔒 책상 서랍")
+st.write("자물쇠가 달린 서랍이다. 마지막 4자리 숫자 비밀번호를 입력해야 열 수 있다.")
+code_input = st.text_input("비밀번호 입력 (숫자 4자리)", max_chars=4)
+
+if code_input:
+if code_input == "3942":
+st.success("🎉 정답! 시스템이 복구되었습니다!")
+st.balloons()
+st.session_state.unlocked = True
+else:
+st.error("❌ 틀렸습니다. 다시 시도해보세요.")
+
+elif location == "쓰레기통":
+st.subheader("🗑️ 쓰레기통")
+st.write("버려진 종이조각 안쪽에 QR 코드가 발견되었다!")
+try:
+image = Image.open("qr_code.png")
+st.image(image, caption="QR 코드: 힌트를 담고 있다")
+except:
+st.warning("⚠️ 'qr_code.png' 파일이 폴더에 없어요. 파일을 추가해 주세요.")
+with st.expander("📎 QR 코드 내용 확인"):
+st.write("QR 코드에는 '커밋 메시지를 암호 순서대로 조합하라'고 적혀 있다.")
+
+# ===== 성공 시 추가 메시지 =====
+if st.session_state.unlocked:
+st.markdown("""
+### ✅ 복구 완료!
+- 랜섬웨어에 감염된 시스템이 복구되었습니다.
+- 범인은 아직 밝혀지지 않았지만, 당신의 추리력 덕분에 프로젝트가 살아났습니다.
+- 👑 당신은 동아리의 진정한 해커입니다.
+""")
