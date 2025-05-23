@@ -1,65 +1,65 @@
 import streamlit as st
 
-# 페이지 구성
-st.set_page_config(page_title="방탈출 게임", layout="wide")
+# 페이지 설정
+st.set_page_config(page_title="퀴즈 게임", layout="centered")
 
 # 세션 상태 초기화
-if "page" not in st.session_state:
-    st.session_state.page = "main"
-if "room_index" not in st.session_state:
-    st.session_state.room_index = 0
-if "answers" not in st.session_state:
-    st.session_state.answers = {}
+if "quiz_index" not in st.session_state:
+    st.session_state.quiz_index = 0
+if "score" not in st.session_state:
+    st.session_state.score = 0
+if "submitted" not in st.session_state:
+    st.session_state.submitted = False
 
-# 방 데이터 정의 (여기선 예시로 2개 방)
-rooms = [
+# 퀴즈 데이터
+quizzes = [
     {
-        "title": "첫 번째 방",
-        "hint": "벽에 적힌 숫자는 3, 1, 4입니다. 무슨 숫자일까요?",
-        "answer": "314"
+        "question": "다음 중 대한민국의 수도는?",
+        "options": ["서울", "부산", "인천", "대구"],
+        "answer": "서울"
     },
     {
-        "title": "두 번째 방",
-        "hint": "문을 열기 위해선 영어 단어 'apple'의 철자 수가 필요합니다.",
-        "answer": "5"
+        "question": "파이썬에서 리스트를 만드는 키워드는?",
+        "options": ["set", "list", "dict", "tuple"],
+        "answer": "list"
+    },
+    {
+        "question": "3 + 5 * 2 는?",
+        "options": ["13", "16", "10", "8"],
+        "answer": "13"
     }
 ]
 
-# 메인 화면
-def show_main_page():
-    st.title("🔐 방탈출 게임")
-    st.markdown("버튼을 눌러 게임을 시작하세요.")
-    if st.button("게임 시작"):
-        st.session_state.page = "game"
-
-# 게임 화면
-def show_game_page():
-    room = rooms[st.session_state.room_index]
-    st.title(f"🚪 {room['title']}")
+# 퀴즈 로직
+def show_quiz():
+    quiz = quizzes[st.session_state.quiz_index]
+    st.header(f"문제 {st.session_state.quiz_index + 1} / {len(quizzes)}")
+    st.write(quiz["question"])
     
-    # 힌트 출력
-    st.markdown(f"💡 힌트: {room['hint']}")
+    selected = st.radio("보기 중에서 하나를 선택하세요.", quiz["options"], key=st.session_state.quiz_index)
     
-    # 정답 입력
-    answer = st.text_input("정답을 입력하세요:", key=st.session_state.room_index)
-    if st.button("제출"):
-        if answer == room["answer"]:
-            st.success("정답입니다!")
-            st.session_state.answers[st.session_state.room_index] = answer
+    if st.button("제출", key=f"submit_{st.session_state.quiz_index}") and not st.session_state.submitted:
+        st.session_state.submitted = True
+        if selected == quiz["answer"]:
+            st.success("정답입니다! +1점")
+            st.session_state.score += 1
         else:
-            st.error("틀렸습니다. 다시 시도해보세요.")
-    
-    # 이동 버튼
-    col1, col2, col3 = st.columns([1, 6, 1])
-    with col1:
-        if st.session_state.room_index > 0 and st.button("⬅️ 왼쪽"):
-            st.session_state.room_index -= 1
-    with col3:
-        if st.session_state.room_index < len(rooms) - 1 and st.button("➡️ 오른쪽"):
-            st.session_state.room_index += 1
+            st.error(f"틀렸습니다. 정답은 '{quiz['answer']}'입니다.")
 
-# 화면 전환
-if st.session_state.page == "main":
-    show_main_page()
-elif st.session_state.page == "game":
-    show_game_page()
+    if st.session_state.submitted:
+        if st.session_state.quiz_index < len(quizzes) - 1:
+            if st.button("다음 문제로"):
+                st.session_state.quiz_index += 1
+                st.session_state.submitted = False
+        else:
+            st.markdown("---")
+            st.subheader("🎉 퀴즈 완료!")
+            st.success(f"당신의 점수는 {st.session_state.score} / {len(quizzes)}점 입니다.")
+            if st.button("처음부터 다시하기"):
+                st.session_state.quiz_index = 0
+                st.session_state.score = 0
+                st.session_state.submitted = False
+
+# 실행
+st.title("📝 간단한 퀴즈 게임")
+show_quiz()
