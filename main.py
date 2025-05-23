@@ -42,4 +42,48 @@ st.title("⌨️ 제한시간 타자 게임")
 st.write("제시된 단어를 7초 안에 입력하세요!")
 
 # 시작/다음 단어 버튼
-if not st.sessi
+if not st.session_state.game_active or st.session_state.word == "":
+    if st.button("게임 시작 / 다음 단어"):
+        generate_word()
+        st.experimental_rerun()
+
+# 단어가 있는 경우
+if st.session_state.word:
+    st.markdown(f"## 단어: `{st.session_state.word}`")
+
+    # 타이머
+    remaining_time = show_timer()
+
+    # 입력창
+    input_area = st.empty()
+    answer = input_area.text_input("정확히 입력하세요:", key=st.session_state.word_count)
+
+    # 시간 초과 체크
+    if remaining_time < 0:
+        st.error("⏰ 시간 초과! 실패!")
+        st.session_state.word = ""
+        st.session_state.game_active = False
+        time.sleep(1)
+        st.experimental_rerun()
+
+    # 정답 체크
+    if answer:
+        if answer.strip().lower() == st.session_state.word.lower():
+            st.success("✅ 정답입니다! +1점")
+            st.session_state.score += 1
+        else:
+            st.error("❌ 오답입니다.")
+        st.session_state.word = ""
+        st.session_state.game_active = False
+        time.sleep(1)
+        st.experimental_rerun()
+
+# 점수 표시
+st.markdown("---")
+st.subheader(f"🎯 현재 점수: {st.session_state.score}점")
+
+# 초기화
+if st.button("처음부터 다시하기"):
+    for key in st.session_state.keys():
+        del st.session_state[key]
+    st.experimental_rerun()
