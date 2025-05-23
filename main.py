@@ -2,8 +2,33 @@ import streamlit as st
 import random
 import time
 
-# 기본 설정
-st.set_page_config(page_title="타자 게임", layout="centered")
+# 설정
+st.set_page_config(page_title="Hack Typing Game", layout="centered")
+
+# 스타일 적용 (컴퓨터공학 느낌)
+st.markdown("""
+    <style>
+    body {
+        background-color: #000000;
+        color: #00FF00;
+    }
+    .stApp {
+        background-color: #000000;
+        color: #00FF00;
+        font-family: 'Courier New', monospace;
+    }
+    .stTextInput > div > div > input {
+        background-color: #000000;
+        color: #00FF00;
+        font-family: 'Courier New', monospace;
+    }
+    .stButton > button {
+        background-color: #003300;
+        color: #00FF00;
+        font-family: 'Courier New', monospace;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
 # 초기화
 if "score" not in st.session_state:
@@ -17,10 +42,10 @@ if "word_count" not in st.session_state:
 if "game_active" not in st.session_state:
     st.session_state.game_active = False
 
-# 단어 리스트
-words = ["apple", "banana", "python", "streamlit", "keyboard", "orange", "grape", "monitor", "escape", "click"]
+# 단어 목록
+words = ["binary", "compile", "debug", "variable", "streamlit", "python", "pointer", "stack", "recursion", "algorithm"]
 
-# 제한 시간 (초)
+# 제한 시간 설정
 TIME_LIMIT = 7
 
 # 단어 생성
@@ -30,60 +55,58 @@ def generate_word():
     st.session_state.word_count += 1
     st.session_state.game_active = True
 
-# 타이머 표시
+# 타이머
 def show_timer():
     remaining = TIME_LIMIT - int(time.time() - st.session_state.start_time)
     if remaining >= 0:
-        st.warning(f"⏱ 남은 시간: {remaining}초")
+        st.markdown(f"### ⏱ 남은 시간: `{remaining}` 초")
     return remaining
 
-# 타자 게임 시작
-st.title("⌨️ 제한시간 타자 게임")
-st.write("제시된 단어를 7초 안에 입력하세요!")
+# 헤더
+st.markdown("<h1 style='color:#00FF00'>⌨️ HACK-TYPING GAME</h1>", unsafe_allow_html=True)
+st.markdown("<h3 style='color:#00FF00'>7초 안에 정확하게 입력하세요!</h3>", unsafe_allow_html=True)
 
-# 시작/다음 단어 버튼
+# 시작 버튼
 if not st.session_state.game_active or st.session_state.word == "":
     if st.button("게임 시작 / 다음 단어"):
         generate_word()
         st.experimental_rerun()
 
-# 단어가 있는 경우
+# 단어 & 타자 입력
 if st.session_state.word:
-    st.markdown(f"## 단어: `{st.session_state.word}`")
-
-    # 타이머
+    st.markdown(f"## TARGET: `{st.session_state.word}`")
     remaining_time = show_timer()
 
-    # 입력창
     input_area = st.empty()
-    answer = input_area.text_input("정확히 입력하세요:", key=st.session_state.word_count)
+    answer = input_area.text_input(">>", key=st.session_state.word_count)
 
-    # 시간 초과 체크
+    # 시간 초과
     if remaining_time < 0:
-        st.error("⏰ 시간 초과! 실패!")
+        st.error("⏰ TIMEOUT! 실패!")
         st.session_state.word = ""
         st.session_state.game_active = False
         time.sleep(1)
         st.experimental_rerun()
 
-    # 정답 체크
+    # 정답 처리
     if answer:
         if answer.strip().lower() == st.session_state.word.lower():
-            st.success("✅ 정답입니다! +1점")
+            st.success("✅ 정답! +1점")
             st.session_state.score += 1
         else:
-            st.error("❌ 오답입니다.")
+            st.error("❌ 오답!")
         st.session_state.word = ""
         st.session_state.game_active = False
         time.sleep(1)
         st.experimental_rerun()
 
-# 점수 표시
+# 점수
 st.markdown("---")
-st.subheader(f"🎯 현재 점수: {st.session_state.score}점")
+st.markdown(f"### 🎯 SCORE: `{st.session_state.score}`", unsafe_allow_html=True)
 
 # 초기화
-if st.button("처음부터 다시하기"):
+if st.button("🔁 RESET"):
     for key in st.session_state.keys():
         del st.session_state[key]
     st.experimental_rerun()
+
